@@ -4,8 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Setter
 @Getter
@@ -19,14 +19,14 @@ public class Book {
     @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false, length = 50)
-    private String language;
+    @Column(name = "lingo", nullable = false, length = 2)
+    private String lingo;
 
     @Column(nullable = false, length = 50)
     private String format;
 
-    @Column(nullable = false)
-    private boolean inCollection;
+    @Column(name= "in_stock", nullable = false)
+    private boolean inStock;
 
     @Column(nullable = false, length = 100)
     private String location;
@@ -34,23 +34,29 @@ public class Book {
     @Column(name = "publication_year")
     private Integer publicationYear;
 
-    @Column(name = "original_publication_year")
-    private Integer originalPublicationYear;
+    @Column(name = "historical_date")
+    private Integer historicalDate;
 
     @Column(name = "original_language", length = 50)
     private String originalLanguage;
 
+    @Column(name = "publisher")
+    private String publisher;
+
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<BookPeopleRole> bookPeopleRoles = new ArrayList<>();
+    private Set<BookPeopleRole> bookPeopleRoles = new HashSet<>();
+
+    @ManyToMany(mappedBy = "books", fetch = FetchType.LAZY)
+    private Set<Collection>collections = new HashSet<>();
 
     public Book() {
     }
 
     public Book(String title, String language, String format, boolean inCollection, String location) {
         this.title = title;
-        this.language = language;
+        this.lingo = language;
         this.format = format;
-        this.inCollection = inCollection;
+        this.inStock = inCollection;
         this.location = location;
     }
 
@@ -63,12 +69,12 @@ public class Book {
                 Integer originalPublicationYear,
                 String originalLanguage) {
         this.title = title;
-        this.language = language;
+        this.lingo = language;
         this.format = format;
-        this.inCollection = inCollection;
+        this.inStock = inCollection;
         this.location = location;
         this.publicationYear = publicationYear;
-        this.originalPublicationYear = originalPublicationYear;
+        this.historicalDate = originalPublicationYear;
         this.originalLanguage = originalLanguage;
     }
 
@@ -78,12 +84,12 @@ public class Book {
         return "Book{" +
                 "id=" + id +
                 ", title='" + title + '\'' +
-                ", language='" + language + '\'' +
+                ", language='" + lingo + '\'' +
                 ", format='" + format + '\'' +
-                ", inCollection=" + inCollection +
+                ", inCollection=" + inStock +
                 ", location='" + location + '\'' +
                 ", publicationYear=" + publicationYear +
-                ", originalPublicationYear=" + originalPublicationYear +
+                ", originalPublicationYear=" + historicalDate +
                 ", originalLanguage='" + originalLanguage + '\'' +
                 '}';
     }

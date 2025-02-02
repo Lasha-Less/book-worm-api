@@ -4,8 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Setter
 @Getter
@@ -16,24 +16,36 @@ public class Person {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 50)
-    private String name;
+    @Column(name = "first_name", nullable = false, length = 100)
+    private String firstName;
+
+    @Column(name = "prefix", length = 10)
+    private String prefix;
+
+    @Column(name = "last_name", length = 100)
+    private String lastName;
 
     @OneToMany(mappedBy = "person", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<BookPeopleRole> bookPeopleRoles = new ArrayList<>();
+    private Set<BookPeopleRole> bookPeopleRoles = new HashSet<>();
 
     public Person() {
     }
 
     public Person(String name) {
-        this.name = name;
+        this.firstName = name;
+    }
+
+    public Person(String firstName, String prefix, String lastName) {
+        this.firstName = firstName;
+        this.prefix = prefix;
+        this.lastName = lastName;
     }
 
     @Override
     public String toString() {
         return "Person{" +
                 "id=" + id +
-                ", name='" + name + '\'' +
+                ", name='" + firstName + '\'' +
                 '}';
     }
 
