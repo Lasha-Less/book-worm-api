@@ -1,7 +1,6 @@
 package com.lb.book_worm_api.controller;
 
 import com.lb.book_worm_api.model.Person;
-import com.lb.book_worm_api.repository.PersonRepo;
 import com.lb.book_worm_api.service.PersonService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,8 +25,8 @@ public class PersonController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Person> getPersonById(@PathVariable Long id){
-        Optional<Person> person = personService.getPersonById(id);
-        return person.map(ResponseEntity::ok).orElseGet(()-> ResponseEntity.notFound().build());
+        Person person = personService.getPersonById(id);
+        return ResponseEntity.ok(person);
     }
 
     @PostMapping
@@ -38,8 +37,8 @@ public class PersonController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Person> updatePerson(@PathVariable Long id, @RequestBody Person person){
-        Optional<Person> updatedPerson = personService.updatePerson(id, person);
-        return updatedPerson.map(ResponseEntity::ok).orElseGet(()-> ResponseEntity.notFound().build());
+        Person updatedPerson = personService.updatePerson(id, person);
+        return ResponseEntity.ok(updatedPerson);
     }
 
     @DeleteMapping("/{id}")

@@ -1,5 +1,6 @@
 package com.lb.book_worm_api.controller;
 
+import com.lb.book_worm_api.dto.BookInputDTO;
 import com.lb.book_worm_api.model.Book;
 import com.lb.book_worm_api.service.BookService;
 import org.springframework.http.ResponseEntity;
@@ -19,8 +20,8 @@ public class BookController {
     }
 
     @PostMapping //Create or save new book
-    public ResponseEntity<Book> createBook(@RequestBody Book book){
-        return ResponseEntity.ok(bookService.saveBook(book));
+    public ResponseEntity<Book> createBook(@RequestBody BookInputDTO bookInputDTO){
+        return ResponseEntity.ok(bookService.createBook(bookInputDTO));
     }
 
     @GetMapping // All books
@@ -30,22 +31,20 @@ public class BookController {
 
     @GetMapping("/{id}") // Individual book
     public ResponseEntity<Book> getBookById(@PathVariable Long id){
-        return bookService.getBookById(id).map(ResponseEntity::ok).orElseGet(()-> ResponseEntity.notFound().build());
+        Book book = bookService.getBookById(id);
+        return ResponseEntity.ok(book);
     }
 
     @PutMapping("/{id}") //update
-    public ResponseEntity<Book> updateBook(@PathVariable Long id, @RequestBody Book bookDetails){
-        Optional<Book> updatedBook = bookService.updateBook(id, bookDetails);
+    public ResponseEntity<Book> updateBook(@PathVariable Long id, @RequestBody BookInputDTO bookInputDTO){
+        Optional<Book> updatedBook = bookService.updateBook(id, bookInputDTO);
         return updatedBook.map(ResponseEntity::ok).orElseGet(()-> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteBook(@PathVariable Long id){
-        if (bookService.deleteBook(id)) {
-            return ResponseEntity.noContent().build();
-        } else {
-            return ResponseEntity.noContent().build();
-        }
+        bookService.deleteBook(id);
+        return ResponseEntity.noContent().build();
     }
 
 }

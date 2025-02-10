@@ -1,5 +1,4 @@
 package com.lb.book_worm_api.model;
-import com.lb.book_worm_api.model.Book;
 
 
 import jakarta.persistence.*;
