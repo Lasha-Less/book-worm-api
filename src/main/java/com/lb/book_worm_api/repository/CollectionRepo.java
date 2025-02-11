@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface CollectionRepo extends JpaRepository<Collection, Long> {
     Optional<Collection> findByName(String name);
+    boolean existsByNameIgnoreCase(String name);
 }

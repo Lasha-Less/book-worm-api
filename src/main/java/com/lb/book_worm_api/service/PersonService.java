@@ -3,8 +3,8 @@ package com.lb.book_worm_api.service;
 import com.lb.book_worm_api.dto.BookInputDTO;
 import com.lb.book_worm_api.exception.DuplicateResourceException;
 import com.lb.book_worm_api.exception.ResourceNotFoundException;
+import com.lb.book_worm_api.exception.ValidationException;
 import com.lb.book_worm_api.model.Book;
-import com.lb.book_worm_api.model.BookPeopleRole;
 import com.lb.book_worm_api.model.Person;
 import com.lb.book_worm_api.model.Role;
 import com.lb.book_worm_api.repository.BookPeopleRoleRepo;
@@ -12,7 +12,9 @@ import com.lb.book_worm_api.repository.PersonRepo;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -46,6 +48,14 @@ public class PersonService {
         return personRepo.findByFirstNameAndLastName(firstName, lastName);
     }
 
+    public List<Person> getPersonByLastname(String lastName){
+        return personRepo.findByLastNameIgnoreCase(lastName);
+    }
+
+    public List<Person> getPersonsByRole(Role role){
+        return bookPeopleRoleRepo.findPersonByRole(role);
+    }
+
     //CREATE single
     public Person createPerson(Person person){
         if (personRepo.existsByFirstNameAndLastName(person.getFirstName(), person.getLastName())){
@@ -56,9 +66,12 @@ public class PersonService {
     }
 
     @Transactional
-    public Person getOrCreatePerson(String firstname, String lastName){
-        return findByName(firstname, lastName).orElseGet(()-> {
-            Person newPerson = new Person(firstname, lastName);
+    public Person getOrCreatePerson(String firstName, String lastName){
+        if (firstName == null || firstName.isBlank() || lastName == null || lastName.isBlank()) {
+            throw new ValidationException("Both first name and last name are required.");
+        }
+        return findByName(firstName, lastName).orElseGet(()-> {
+            Person newPerson = new Person(firstName, lastName);
             return personRepo.save(newPerson);
         });
     }
@@ -81,60 +94,33 @@ public class PersonService {
 
     @Transactional
     public void assignPeopleToBook(Book book, BookInputDTO bookInputDTO) {
-        // Assign authors
-        if (bookInputDTO.getAuthors() != null) {
-            for (Person author : bookInputDTO.getAuthors()) {
-                Person existingOrNewAuthor = getOrCreatePerson(author.getFirstName(), author.getLastName());
-                bookPeopleRoleService.assignRole(book, existingOrNewAuthor, Role.AUTHOR);
-            }
-        }
 
-        // Assign editors
-        if (bookInputDTO.getEditors() != null) {
-            for (Person editor : bookInputDTO.getEditors()) {
-                Person existingOrNewEditor = getOrCreatePerson(editor.getFirstName(), editor.getLastName());
-                bookPeopleRoleService.assignRole(book, existingOrNewEditor, Role.EDITOR);
-            }
-        }
+        Map<String, Person> personCache = new HashMap<>();
 
-        // Assign translators
-        if (bookInputDTO.getTranslators() != null) {
-            for (Person translator : bookInputDTO.getTranslators()) {
-                Person existingOrNewTranslator = getOrCreatePerson(translator.getFirstName(), translator.getLastName());
-                bookPeopleRoleService.assignRole(book, existingOrNewTranslator, Role.TRANSLATOR);
-            }
-        }
-
-        // Assign contributors
-        if (bookInputDTO.getContributors() != null) {
-            for (Person contributor : bookInputDTO.getContributors()) {
-                Person existingOrNewContributor = getOrCreatePerson(contributor.getFirstName(), contributor.getLastName());
-                bookPeopleRoleService.assignRole(book, existingOrNewContributor, Role.CONTRIBUTOR);
-            }
-        }
-
-        // Assign illustrators
-        if (bookInputDTO.getIllustrators() != null) {
-            for (Person illustrator : bookInputDTO.getIllustrators()) {
-                Person existingOrNewIllustrator = getOrCreatePerson(illustrator.getFirstName(), illustrator.getLastName());
-                bookPeopleRoleService.assignRole(book, existingOrNewIllustrator, Role.ILLUSTRATOR);
-            }
-        }
-
-        // Assign others
-        if (bookInputDTO.getOthers() != null) {
-            for (Person other : bookInputDTO.getOthers()) {
-                Person existingOrNewOther = getOrCreatePerson(other.getFirstName(), other.getLastName());
-                bookPeopleRoleService.assignRole(book, existingOrNewOther, Role.OTHER);
-            }
-        }
+        assignRoleToPeople(book, bookInputDTO.getAuthors(), Role.AUTHOR, personCache);
+        assignRoleToPeople(book, bookInputDTO.getEditors(), Role.EDITOR, personCache);
+        assignRoleToPeople(book, bookInputDTO.getTranslators(), Role.TRANSLATOR, personCache);
+        assignRoleToPeople(book, bookInputDTO.getContributors(), Role.CONTRIBUTOR, personCache);
+        assignRoleToPeople(book, bookInputDTO.getIllustrators(), Role.ILLUSTRATOR, personCache);
+        assignRoleToPeople(book, bookInputDTO.getOthers(), Role.OTHER, personCache);
     }
 
+    private void assignRoleToPeople(Book book, List<Person> people, Role role, Map<String, Person>personCache){
+        if (people==null) return;
+
+        for (Person person : people) {
+            String personKey = person.getFirstName() + "_" + person.getLastName();
+            Person existingOrNewPerson = personCache.computeIfAbsent(
+                    personKey, k -> getOrCreatePerson(person.getFirstName(), person.getLastName()));
+            bookPeopleRoleService.assignRole(book, existingOrNewPerson, role);
+        }
+    }
 
     //DELETE single
     public void deletePerson(Long id){
         Person person = personRepo.findById(id)
-                .orElseThrow(()-> new ResourceNotFoundException("Person not found with ID:" + id));
+                .orElseThrow(()-> new ResourceNotFoundException(
+                        "Cannot delete: Person with ID " + id + " does not exist."));
         personRepo.delete(person);
     }
 

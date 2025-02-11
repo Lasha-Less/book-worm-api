@@ -2,6 +2,8 @@ package com.lb.book_worm_api.controller;
 
 import com.lb.book_worm_api.model.BookPeopleRole;
 import com.lb.book_worm_api.service.BookPeopleRoleService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,13 +21,18 @@ public class BookPeopleRoleController {
     }
 
     @PostMapping //CREATE BookPeopleRole
-    public ResponseEntity<BookPeopleRole> createBookPeopleRole(@RequestBody BookPeopleRole bookPeopleRole){
-        return ResponseEntity.ok(bookPeopleRoleService.createBookPeopleRole(bookPeopleRole));
+    public ResponseEntity<BookPeopleRole> createBookPeopleRole(@Valid @RequestBody BookPeopleRole bookPeopleRole){
+        BookPeopleRole savedRole = bookPeopleRoleService.createBookPeopleRole(bookPeopleRole);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedRole);
     }
 
     @GetMapping //READ all BookPeopleRoles
     public ResponseEntity<List<BookPeopleRole>> getAllBookPeopleRoles(){
-        return ResponseEntity.ok(bookPeopleRoleService.getAllBookPeopleRoles());
+        List<BookPeopleRole> roles = bookPeopleRoleService.getAllBookPeopleRoles();
+        if (roles.isEmpty()){
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(roles);
     }
 
     @GetMapping("/{id}") //READ BookPeopleRole
@@ -37,7 +44,7 @@ public class BookPeopleRoleController {
     @PutMapping("/{id}") //UPDATE
     public ResponseEntity<BookPeopleRole> updateBookPeopleRole(
             @PathVariable Long id,
-            @RequestBody BookPeopleRole bookPeopleRoleDetails){
+            @Valid @RequestBody BookPeopleRole bookPeopleRoleDetails){
         Optional<BookPeopleRole>updateBookPeopleRole = bookPeopleRoleService
                 .updateBookPeopleRole(id, bookPeopleRoleDetails);
         return updateBookPeopleRole.map(ResponseEntity::ok).orElseGet(()-> ResponseEntity.notFound().build());

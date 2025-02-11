@@ -38,6 +38,10 @@ public class BookService {
         return bookRepo.findById(id).orElseThrow(()-> new ResourceNotFoundException("Book not found with ID: " + id));
     }
 
+    public List<Book> getBooksByTitle(String title){
+        return bookRepo.findByTitleContainingIgnoreCase(title);
+    }
+
     //CREATE single
     @Transactional
     public Book createBook(BookInputDTO bookInputDTO) {

@@ -3,6 +3,8 @@ package com.lb.book_worm_api.controller;
 import com.lb.book_worm_api.dto.BookInputDTO;
 import com.lb.book_worm_api.model.Book;
 import com.lb.book_worm_api.service.BookService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,13 +22,17 @@ public class BookController {
     }
 
     @PostMapping //Create or save new book
-    public ResponseEntity<Book> createBook(@RequestBody BookInputDTO bookInputDTO){
-        return ResponseEntity.ok(bookService.createBook(bookInputDTO));
+    public ResponseEntity<Book> createBook(@Valid @RequestBody BookInputDTO bookInputDTO){
+        return ResponseEntity.status(HttpStatus.CREATED).body(bookService.createBook(bookInputDTO));
     }
 
     @GetMapping // All books
     public ResponseEntity<List<Book>> getAllBooks(){
-        return ResponseEntity.ok(bookService.getAllBooks());
+        List<Book>books = bookService.getAllBooks();
+        if (books.isEmpty()){
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(books);
     }
 
     @GetMapping("/{id}") // Individual book
@@ -35,8 +41,17 @@ public class BookController {
         return ResponseEntity.ok(book);
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<List<Book>> getBooksByTitle(@RequestParam String title){
+        List<Book> books = bookService.getBooksByTitle(title);
+        if (books.isEmpty()){
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(books);
+    }
+
     @PutMapping("/{id}") //update
-    public ResponseEntity<Book> updateBook(@PathVariable Long id, @RequestBody BookInputDTO bookInputDTO){
+    public ResponseEntity<Book> updateBook(@PathVariable Long id, @Valid @RequestBody BookInputDTO bookInputDTO){
         Optional<Book> updatedBook = bookService.updateBook(id, bookInputDTO);
         return updatedBook.map(ResponseEntity::ok).orElseGet(()-> ResponseEntity.notFound().build());
     }
