@@ -1,5 +1,6 @@
 package com.lb.book_worm_api.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
@@ -28,7 +29,8 @@ public class Person {
     @NotBlank(message = "Last name cannot be empty")
     private String lastName;
 
-    @OneToMany(mappedBy = "person", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "person", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @JsonManagedReference // Allows Person -> BookPeopleRole serialization
     private Set<BookPeopleRole> bookPeopleRoles = new HashSet<>();
 
     public Person() {

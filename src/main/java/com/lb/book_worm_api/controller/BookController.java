@@ -1,7 +1,7 @@
 package com.lb.book_worm_api.controller;
 
+import com.lb.book_worm_api.dto.BookDTO;
 import com.lb.book_worm_api.dto.BookInputDTO;
-import com.lb.book_worm_api.model.Book;
 import com.lb.book_worm_api.service.BookService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -22,13 +22,13 @@ public class BookController {
     }
 
     @PostMapping //Create or save new book
-    public ResponseEntity<Book> createBook(@Valid @RequestBody BookInputDTO bookInputDTO){
+    public ResponseEntity<BookDTO> createBook(@Valid @RequestBody BookInputDTO bookInputDTO){
         return ResponseEntity.status(HttpStatus.CREATED).body(bookService.createBook(bookInputDTO));
     }
 
     @GetMapping // All books
-    public ResponseEntity<List<Book>> getAllBooks(){
-        List<Book>books = bookService.getAllBooks();
+    public ResponseEntity<List<BookDTO>> getAllBooks(){
+        List<BookDTO> books = bookService.getAllBooks();
         if (books.isEmpty()){
             return ResponseEntity.noContent().build();
         }
@@ -36,14 +36,14 @@ public class BookController {
     }
 
     @GetMapping("/{id}") // Individual book
-    public ResponseEntity<Book> getBookById(@PathVariable Long id){
-        Book book = bookService.getBookById(id);
+    public ResponseEntity<BookDTO> getBookById(@PathVariable Long id){
+        BookDTO book = bookService.getBookById(id);
         return ResponseEntity.ok(book);
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<Book>> getBooksByTitle(@RequestParam String title){
-        List<Book> books = bookService.getBooksByTitle(title);
+    public ResponseEntity<List<BookDTO>> getBooksByTitle(@RequestParam String title){
+        List<BookDTO> books = bookService.getBooksByTitle(title);
         if (books.isEmpty()){
             return ResponseEntity.noContent().build();
         }
@@ -51,8 +51,8 @@ public class BookController {
     }
 
     @PutMapping("/{id}") //update
-    public ResponseEntity<Book> updateBook(@PathVariable Long id, @Valid @RequestBody BookInputDTO bookInputDTO){
-        Optional<Book> updatedBook = bookService.updateBook(id, bookInputDTO);
+    public ResponseEntity<BookDTO> updateBook(@PathVariable Long id, @Valid @RequestBody BookInputDTO bookInputDTO){
+        Optional<BookDTO> updatedBook = bookService.updateBook(id, bookInputDTO);
         return updatedBook.map(ResponseEntity::ok).orElseGet(()-> ResponseEntity.notFound().build());
     }
 

@@ -1,5 +1,6 @@
 package com.lb.book_worm_api.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -43,7 +44,8 @@ public class Book {
     @Column(name = "publisher")
     private String publisher;
 
-    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @JsonManagedReference // Allows Book -> BookPeopleRole serialization
     private Set<BookPeopleRole> bookPeopleRoles = new HashSet<>();
 
     @ManyToMany(mappedBy = "books", fetch = FetchType.LAZY)

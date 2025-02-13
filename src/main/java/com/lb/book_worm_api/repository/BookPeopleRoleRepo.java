@@ -19,7 +19,7 @@ public interface BookPeopleRoleRepo extends JpaRepository<BookPeopleRole, Long> 
 
     Optional<BookPeopleRole> findByBookAndPersonAndRole(Book book, Person person, Role role);
 
-    @Query("SELECT DISTINCT bpr.person FROM BookPeopleRole pbr WHERE bpr.role = :role")
+    @Query("SELECT DISTINCT bpr.person FROM BookPeopleRole bpr WHERE bpr.role = :role")
     List<Person>findPersonByRole(@Param("role") Role role);
 
 }

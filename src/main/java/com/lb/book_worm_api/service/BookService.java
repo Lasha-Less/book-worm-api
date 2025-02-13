@@ -1,6 +1,9 @@
 package com.lb.book_worm_api.service;
 
+import com.lb.book_worm_api.dto.BookDTO;
 import com.lb.book_worm_api.dto.BookInputDTO;
+import com.lb.book_worm_api.dto.BookRoleDTO;
+import com.lb.book_worm_api.dto.PersonRoleDTO;
 import com.lb.book_worm_api.exception.DuplicateResourceException;
 import com.lb.book_worm_api.exception.ResourceNotFoundException;
 import com.lb.book_worm_api.exception.ValidationException;
@@ -28,23 +31,32 @@ public class BookService {
         this.personService = personService;
     }
 
-    //GET all
-    public List<Book> getAllBooks(){
-        return bookRepo.findAll();
+    //GET all books
+    public List<BookDTO> getAllBooks() {
+        return bookRepo.findAll().stream()
+                .map(this::convertToDTO) // Convert each Book entity to BookDTO
+                .collect(Collectors.toList());
     }
+
 
     //GET single
-    public Book getBookById(Long id){
-        return bookRepo.findById(id).orElseThrow(()-> new ResourceNotFoundException("Book not found with ID: " + id));
+    public BookDTO getBookById(Long id) {
+        Book book = bookRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with ID: " + id));
+        return convertToDTO(book);
     }
 
-    public List<Book> getBooksByTitle(String title){
-        return bookRepo.findByTitleContainingIgnoreCase(title);
+
+    public List<BookDTO> getBooksByTitle(String title) {
+        List<Book> books = bookRepo.findByTitleContainingIgnoreCase(title);
+        return books.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
     //CREATE single
     @Transactional
-    public Book createBook(BookInputDTO bookInputDTO) {
+    public BookDTO createBook(BookInputDTO bookInputDTO) {
         if (bookRepo.existsByTitle(bookInputDTO.getTitle())) {
             throw new DuplicateResourceException(
                     "A book with the title '" + bookInputDTO.getTitle() + "' already exists.");
@@ -85,12 +97,13 @@ public class BookService {
         // Assign authors, editors, etc.
         personService.assignPeopleToBook(savedBook, bookInputDTO);
 
-        return savedBook;
+        // Convert and return DTO
+        return convertToDTO(savedBook);
     }
 
     //UPDATE single
     @Transactional
-    public Optional<Book> updateBook(Long id, BookInputDTO bookInputDTO) {
+    public Optional<BookDTO> updateBook(Long id, BookInputDTO bookInputDTO) {
         return bookRepo.findById(id).map(existingBook -> {
             boolean isUpdated = false;
 
@@ -147,10 +160,10 @@ public class BookService {
             if (isUpdated) {
                 Book updatedBook = bookRepo.save(existingBook);
                 personService.assignPeopleToBook(updatedBook, bookInputDTO);
-                return updatedBook;
+                return convertToDTO(updatedBook);
             }
 
-            return existingBook; // No changes, return as is
+            return convertToDTO(existingBook); // No changes, return as is
         });
     }
 
@@ -163,4 +176,40 @@ public class BookService {
 
         bookRepo.delete(book);
     }
+
+    public BookDTO convertToDTO(Book book) {
+        BookDTO bookDTO = new BookDTO();
+
+        bookDTO.setId(book.getId());
+        bookDTO.setTitle(book.getTitle());
+        bookDTO.setLingo(book.getLingo());
+        bookDTO.setFormat(book.getFormat());
+        bookDTO.setLocation(book.getLocation());
+        bookDTO.setInStock(book.isInStock());
+        bookDTO.setOriginalLanguage(book.getOriginalLanguage());
+        bookDTO.setPublicationYear(book.getPublicationYear());
+        bookDTO.setHistoricalDate(book.getHistoricalDate());
+        bookDTO.setPublisher(book.getPublisher());
+
+        // Convert collections
+        bookDTO.setCollections(
+                book.getCollections().stream()
+                        .map(Collection::getName)
+                        .collect(Collectors.toList())
+        );
+
+        // Convert book roles properly
+        bookDTO.setPeople(
+                book.getBookPeopleRoles().stream()
+                        .map(role -> new PersonRoleDTO(
+                                role.getPerson().getFirstName(), role.getPerson().getLastName(), // Combine full name
+                                role.getRole().getDisplayName() // Convert Role Enum to String
+                        ))
+                        .collect(Collectors.toList())
+        );
+
+        return bookDTO;
+    }
+
+
 }
