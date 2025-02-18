@@ -1,5 +1,7 @@
 package com.lb.book_worm_api.controller;
 
+import com.lb.book_worm_api.dto.PersonDTO;
+import com.lb.book_worm_api.dto.PersonUpdateDTO;
 import com.lb.book_worm_api.model.Person;
 import com.lb.book_worm_api.model.Role;
 import com.lb.book_worm_api.service.PersonService;
@@ -21,54 +23,50 @@ public class PersonController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Person>> getAllPeople(){
-        List<Person>people = personService.getAllPersons();
-        if (people.isEmpty()){
+    public ResponseEntity<List<PersonDTO>> getAllPeople() {
+        List<PersonDTO> people = personService.getAllPersons();
+        if (people.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(people);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Person> getPersonById(@PathVariable Long id){
-        Person person = personService.getPersonById(id);
+    public ResponseEntity<PersonDTO> getPersonById(@PathVariable Long id){
+        PersonDTO person = personService.getPersonById(id);
         return ResponseEntity.ok(person);
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<Person>> getPersonPyLastName(@RequestParam String lastName){
-        List<Person>people = personService.getPersonByLastname(lastName);
-        if (people.isEmpty()){
+    public ResponseEntity<List<PersonDTO>> getPersonByLastName(@RequestParam String lastName) {
+        List<PersonDTO> people = personService.getPersonByLastname(lastName);
+        if (people.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(people);
     }
 
     @GetMapping("/role")
-    public ResponseEntity<List<Person>> getPersonsByRole(@RequestParam Role role){
-        List<Person>people = personService.getPersonsByRole(role);
-        if (people.isEmpty()){
+    public ResponseEntity<List<PersonDTO>> getPersonsByRole(@RequestParam Role role) {
+        List<PersonDTO> people = personService.getPersonsByRole(role);
+        if (people.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(people);
     }
 
-    @PostMapping
-    public ResponseEntity<Person> createPerson(@Valid @RequestBody Person person){
-        Person savedPerson = personService.createPerson(person);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedPerson);
-    }
-
     @PutMapping("/{id}")
-    public ResponseEntity<Person> updatePerson(@PathVariable Long id, @Valid @RequestBody Person person){
-        Person updatedPerson = personService.updatePerson(id, person);
+    public ResponseEntity<PersonDTO> updatePerson(
+            @PathVariable Long id,
+            @Valid @RequestBody PersonUpdateDTO personUpdateDTO){
+        PersonDTO updatedPerson = personService.updatePerson(id, personUpdateDTO);
         return ResponseEntity.ok(updatedPerson);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePerson(@PathVariable Long id){
-        personService.deletePerson(id);
-        return ResponseEntity.noContent().build();
-    }
+//    @DeleteMapping("/{id}")
+//    public ResponseEntity<Void> deletePerson(@PathVariable Long id){
+//        personService.deletePerson(id);
+//        return ResponseEntity.noContent().build();
+//    }
 
 }

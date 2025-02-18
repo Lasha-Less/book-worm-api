@@ -1,6 +1,6 @@
 package com.lb.book_worm_api.service;
 
-import com.lb.book_worm_api.dto.BookInputDTO;
+import com.lb.book_worm_api.dto.*;
 import com.lb.book_worm_api.exception.DuplicateResourceException;
 import com.lb.book_worm_api.exception.ResourceNotFoundException;
 import com.lb.book_worm_api.exception.ValidationException;
@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class PersonService {
@@ -34,35 +35,67 @@ public class PersonService {
     }
 
     //GET all
-    public List<Person> getAllPersons(){
-        return personRepo.findAll();
+    public List<PersonDTO> getAllPersons() {
+        List<Person> people = personRepo.findAll();
+
+        return people.stream()
+                .map(person -> new PersonDTO(
+                        person.getId(),
+                        person.getFirstName(),
+                        person.getPrefix(),
+                        person.getLastName(),
+                        person.getBookPeopleRoles().stream()
+                                .map(role -> new BookRoleDTO(role.getBook().getTitle(), role.getRole()
+                                        .toString())).collect(Collectors.toList()))).collect(Collectors.toList());
     }
 
     //GET single
-    public Person getPersonById(Long id){
-        return personRepo.findById(id)
-                .orElseThrow(()-> new ResourceNotFoundException("Person not found with ID: " + id));
+    public PersonDTO getPersonById(Long id) {
+        Person person = personRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Person not found with ID: " + id));
+
+        List<BookRoleDTO> books = person.getBookPeopleRoles().stream()
+                .map(bookPeopleRole -> new BookRoleDTO(
+                        bookPeopleRole.getBook().getTitle(), // Extracts the book title
+                        bookPeopleRole.getRole().toString()  // Extracts the role name
+                ))
+                .collect(Collectors.toList());
+
+        return new PersonDTO(person.getId(), person.getFirstName(), person.getPrefix(), person.getLastName(), books);
     }
 
-    public Optional<Person> findByName(String firstName, String lastName) {
-        return personRepo.findByFirstNameAndLastName(firstName, lastName);
+    public List<PersonDTO> getPersonByLastname(String lastName) {
+        List<Person> people = personRepo.findByLastNameIgnoreCase(lastName);
+
+        return people.stream()
+                .map(person -> new PersonDTO(
+                        person.getId(),
+                        person.getFirstName(),
+                        person.getPrefix(),
+                        person.getLastName(),
+                        person.getBookPeopleRoles().stream()
+                                .map(role -> new BookRoleDTO(
+                                        role.getBook().getTitle(),
+                                        role.getRole().toString()))
+                                .collect(Collectors.toList())
+                ))
+                .collect(Collectors.toList());
     }
 
-    public List<Person> getPersonByLastname(String lastName){
-        return personRepo.findByLastNameIgnoreCase(lastName);
-    }
+    public List<PersonDTO> getPersonsByRole(Role role) {
+        List<Person> people = bookPeopleRoleRepo.findPersonByRole(role);
 
-    public List<Person> getPersonsByRole(Role role){
-        return bookPeopleRoleRepo.findPersonByRole(role);
-    }
-
-    //CREATE single
-    public Person createPerson(Person person){
-        if (personRepo.existsByFirstNameAndLastName(person.getFirstName(), person.getLastName())){
-            throw new DuplicateResourceException(
-                    "A person with the name " + person.getFirstName() + " " + person.getLastName() + " already exists");
-        }
-        return personRepo.save(person);
+        return people.stream()
+                .map(person -> new PersonDTO(
+                        person.getId(),
+                        person.getFirstName(),
+                        person.getPrefix(),
+                        person.getLastName(),
+                        person.getBookPeopleRoles().stream()
+                                .map(roleEntry -> new BookRoleDTO(
+                                        roleEntry.getBook().getTitle(),
+                                        roleEntry.getRole().toString()))
+                                .collect(Collectors.toList()))).collect(Collectors.toList());
     }
 
     @Transactional
@@ -70,14 +103,14 @@ public class PersonService {
         if (firstName == null || firstName.isBlank() || lastName == null || lastName.isBlank()) {
             throw new ValidationException("Both first name and last name are required.");
         }
-        return findByName(firstName, lastName).orElseGet(()-> {
+        return personRepo.findByFirstNameAndLastName(firstName, lastName).orElseGet(()-> {
             Person newPerson = new Person(firstName, lastName);
             return personRepo.save(newPerson);
         });
     }
 
     //UPDATE single
-    public Person updatePerson(Long id, Person personDetails){
+    public PersonDTO updatePerson(Long id, PersonUpdateDTO personDetails){
         Person person = personRepo.findById(id)
                 .orElseThrow(()-> new ResourceNotFoundException("Person not found with ID: " + id));
         if (personDetails.getFirstName() != null && !personDetails.getFirstName().isBlank()){
@@ -89,21 +122,38 @@ public class PersonService {
         if (personDetails.getLastName() != null && !personDetails.getLastName().isBlank()){
             person.setLastName(personDetails.getLastName());
         }
-        return personRepo.save(person);
+
+        Person updatedPerson = personRepo.save(person);
+
+        return new PersonDTO(
+                updatedPerson.getId(),
+                updatedPerson.getFirstName(),
+                updatedPerson.getPrefix(),
+                updatedPerson.getLastName(),
+                updatedPerson.getBookPeopleRoles().stream()
+                        .map(role -> new BookRoleDTO(role.getBook().getTitle(), role.getRole()
+                                .toString())).collect(Collectors.toList())
+        );
     }
 
     @Transactional
-    public void assignPeopleToBook(Book book, BookInputDTO bookInputDTO) {
+    public void assignPeopleToBook(Book book, List<PersonRoleInputDTO> peopleWithRoles, Role role) {
+        if (peopleWithRoles == null || peopleWithRoles.isEmpty()) return;
 
         Map<String, Person> personCache = new HashMap<>();
 
-        assignRoleToPeople(book, bookInputDTO.getAuthors(), Role.AUTHOR, personCache);
-        assignRoleToPeople(book, bookInputDTO.getEditors(), Role.EDITOR, personCache);
-        assignRoleToPeople(book, bookInputDTO.getTranslators(), Role.TRANSLATOR, personCache);
-        assignRoleToPeople(book, bookInputDTO.getContributors(), Role.CONTRIBUTOR, personCache);
-        assignRoleToPeople(book, bookInputDTO.getIllustrators(), Role.ILLUSTRATOR, personCache);
-        assignRoleToPeople(book, bookInputDTO.getOthers(), Role.OTHER, personCache);
+        for (PersonRoleInputDTO personDTO : peopleWithRoles) {
+            String personKey = personDTO.getFirstName() + "_" + personDTO.getLastName();
+
+            // Retrieve or create the person
+            Person existingOrNewPerson = personCache.computeIfAbsent(
+                    personKey, k -> getOrCreatePerson(personDTO.getFirstName(), personDTO.getLastName()));
+
+            // Assign role
+            bookPeopleRoleService.assignRole(book, existingOrNewPerson, role);
+        }
     }
+
 
     private void assignRoleToPeople(Book book, List<Person> people, Role role, Map<String, Person>personCache){
         if (people==null) return;
@@ -117,11 +167,11 @@ public class PersonService {
     }
 
     //DELETE single
-    public void deletePerson(Long id){
-        Person person = personRepo.findById(id)
-                .orElseThrow(()-> new ResourceNotFoundException(
-                        "Cannot delete: Person with ID " + id + " does not exist."));
-        personRepo.delete(person);
-    }
+//    public void deletePerson(Long id){
+//        Person person = personRepo.findById(id)
+//                .orElseThrow(()-> new ResourceNotFoundException(
+//                        "Cannot delete: Person with ID " + id + " does not exist."));
+//        personRepo.delete(person);
+//    }
 
 }

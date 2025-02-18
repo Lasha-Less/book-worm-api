@@ -48,8 +48,13 @@ public class Book {
     @JsonManagedReference // Allows Book -> BookPeopleRole serialization
     private Set<BookPeopleRole> bookPeopleRoles = new HashSet<>();
 
-    @ManyToMany(mappedBy = "books", fetch = FetchType.LAZY)
-    private Set<Collection>collections = new HashSet<>();
+    @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE}) // Removed PERSIST
+    @JoinTable(
+            name = "book_collection",
+            joinColumns = @JoinColumn(name = "book_id"),
+            inverseJoinColumns = @JoinColumn(name = "collection_id")
+    )
+    private Set<Collection> collections = new HashSet<>();
 
     public Book() {
     }

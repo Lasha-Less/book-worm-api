@@ -1,8 +1,6 @@
 package com.lb.book_worm_api.dto;
 
 import com.lb.book_worm_api.exception.ValidationException;
-import com.lb.book_worm_api.model.Person;
-import com.lb.book_worm_api.validation.AtLeastOneCreatorRequired;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;

@@ -2,6 +2,8 @@ package com.lb.book_worm_api.controller;
 
 import com.lb.book_worm_api.dto.BookDTO;
 import com.lb.book_worm_api.dto.BookInputDTO;
+import com.lb.book_worm_api.dto.BookUpdateDTO;
+import com.lb.book_worm_api.exception.ResourceNotFoundException;
 import com.lb.book_worm_api.service.BookService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -50,11 +52,16 @@ public class BookController {
         return ResponseEntity.ok(books);
     }
 
-    @PutMapping("/{id}") //update
-    public ResponseEntity<BookDTO> updateBook(@PathVariable Long id, @Valid @RequestBody BookInputDTO bookInputDTO){
-        Optional<BookDTO> updatedBook = bookService.updateBook(id, bookInputDTO);
-        return updatedBook.map(ResponseEntity::ok).orElseGet(()-> ResponseEntity.notFound().build());
+    @PutMapping("/{id}")
+    public ResponseEntity<BookDTO> updateBook(@PathVariable Long id, @Valid @RequestBody BookUpdateDTO updateBookDTO) {
+        try {
+            BookDTO updatedBook = bookService.updateBook(id, updateBookDTO);
+            return ResponseEntity.ok(updatedBook);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
+
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteBook(@PathVariable Long id){

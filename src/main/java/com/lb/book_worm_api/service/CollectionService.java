@@ -21,6 +21,11 @@ public class CollectionService {
         return collectionRepo.findAll();
     }
 
+    //GET all by specified names
+    public List<Collection> findAllByName(List<String> names) {
+        return collectionRepo.findAllByNameIn(names);
+    }
+
     //GET single
     public Optional<Collection> getCollectionById(Long id){
         return collectionRepo.findById(id);

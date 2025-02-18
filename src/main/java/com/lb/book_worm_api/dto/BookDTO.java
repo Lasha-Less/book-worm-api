@@ -20,8 +20,10 @@ public class BookDTO {
     private String originalLanguage;
     private String publisher;
 
-    // Only include person names and their roles
-    private List<PersonRoleDTO> people;
+    // Separate lists for different roles
+    private List<PersonRoleDTO> authors;
+    private List<PersonRoleDTO> editors;
+    private List<PersonRoleDTO> others;
 
     // Only collection names
     private List<String> collections;
