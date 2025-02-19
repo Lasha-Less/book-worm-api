@@ -36,7 +36,7 @@ public class BookInputDTO {
     private Boolean inStock;
 
     @NotEmpty(message = "At least one collection must be specified")
-    private List<String> collections; // Collection names only.
+    private List<String> collections;
 
     // Optional attributes
 
@@ -70,11 +70,14 @@ public class BookInputDTO {
         this.format = format;
         this.location = location;
         this.inStock = inStock;
-        this.collections = collections;
+        this.collections = (collections == null || collections.isEmpty())
+                ? new ArrayList<>(List.of("Unsorted"))
+                : new ArrayList<>(collections);
 
         // Ensure at least one author or editor exists
         if (this.authors.isEmpty() && this.editors.isEmpty()) {
             throw new ValidationException("A book must have at least one author or editor.");
         }
     }
+
 }

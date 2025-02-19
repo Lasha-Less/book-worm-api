@@ -37,6 +37,19 @@ public class BookController {
         return ResponseEntity.ok(books);
     }
 
+    @GetMapping("/books/by-collection/{collectionId}")
+    public ResponseEntity<List<BookDTO>> getBooksByCollection(@PathVariable Long collectionId) {
+        List<BookDTO> books = bookService.getBooksByCollection(collectionId);
+        return ResponseEntity.ok(books);
+    }
+
+    @GetMapping("/books/by-collection-name/{collectionName}")
+    public ResponseEntity<List<BookDTO>> getBooksByCollectionName(@PathVariable String collectionName) {
+        List<BookDTO> books = bookService.getBooksByCollectionName(collectionName);
+        return ResponseEntity.ok(books);
+    }
+
+
     @GetMapping("/{id}") // Individual book
     public ResponseEntity<BookDTO> getBookById(@PathVariable Long id){
         BookDTO book = bookService.getBookById(id);

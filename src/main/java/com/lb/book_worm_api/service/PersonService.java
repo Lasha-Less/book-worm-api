@@ -5,6 +5,7 @@ import com.lb.book_worm_api.exception.DuplicateResourceException;
 import com.lb.book_worm_api.exception.ResourceNotFoundException;
 import com.lb.book_worm_api.exception.ValidationException;
 import com.lb.book_worm_api.model.Book;
+import com.lb.book_worm_api.model.BookPeopleRole;
 import com.lb.book_worm_api.model.Person;
 import com.lb.book_worm_api.model.Role;
 import com.lb.book_worm_api.repository.BookPeopleRoleRepo;
@@ -22,15 +23,12 @@ import java.util.stream.Collectors;
 public class PersonService {
 
     private final PersonRepo personRepo;
-    private final BookPeopleRoleService bookPeopleRoleService;
     private final BookPeopleRoleRepo bookPeopleRoleRepo;
 
     public PersonService(
             PersonRepo personRepo,
-            BookPeopleRoleService bookPeopleRoleService,
             BookPeopleRoleRepo bookPeopleRoleRepo) {
         this.personRepo = personRepo;
-        this.bookPeopleRoleService = bookPeopleRoleService;
         this.bookPeopleRoleRepo = bookPeopleRoleRepo;
     }
 
@@ -150,7 +148,7 @@ public class PersonService {
                     personKey, k -> getOrCreatePerson(personDTO.getFirstName(), personDTO.getLastName()));
 
             // Assign role
-            bookPeopleRoleService.assignRole(book, existingOrNewPerson, role);
+            assignRole(book, existingOrNewPerson, role);
         }
     }
 
@@ -162,16 +160,14 @@ public class PersonService {
             String personKey = person.getFirstName() + "_" + person.getLastName();
             Person existingOrNewPerson = personCache.computeIfAbsent(
                     personKey, k -> getOrCreatePerson(person.getFirstName(), person.getLastName()));
-            bookPeopleRoleService.assignRole(book, existingOrNewPerson, role);
+            assignRole(book, existingOrNewPerson, role);
         }
     }
 
-    //DELETE single
-//    public void deletePerson(Long id){
-//        Person person = personRepo.findById(id)
-//                .orElseThrow(()-> new ResourceNotFoundException(
-//                        "Cannot delete: Person with ID " + id + " does not exist."));
-//        personRepo.delete(person);
-//    }
+    @Transactional
+    public void assignRole(Book book, Person person, Role role) {
+        bookPeopleRoleRepo.findByBookAndPersonAndRole(
+                book, person, role).orElseGet(()-> bookPeopleRoleRepo.save(new BookPeopleRole(book, person, role)));
+    }
 
 }

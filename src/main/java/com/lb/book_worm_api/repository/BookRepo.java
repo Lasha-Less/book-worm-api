@@ -19,4 +19,9 @@ public interface BookRepo extends JpaRepository<Book, Long> {
     @Query("SELECT DISTINCT b FROM Book b LEFT JOIN FETCH b.collections WHERE b.id = :id")
     Optional<Book> findByIdWithCollections(@Param("id") Long id);
 
+    List<Book> findByCollectionsId(Long collectionId);
+
+    @Query("SELECT b FROM Book b JOIN b.collections c WHERE LOWER(c.name) LIKE LOWER(CONCAT('%', :collectionName, '%'))")
+    List<Book> findByCollectionNameLike(@Param("collectionName") String collectionName);
+
 }

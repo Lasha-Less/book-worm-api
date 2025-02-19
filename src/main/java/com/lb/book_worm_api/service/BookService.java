@@ -81,6 +81,7 @@ public class BookService {
     }
 
     private Book convertToBookEntity(BookInputDTO bookInputDTO) {
+
         Set<Collection> validatedCollections = bookInputDTO.getCollections().stream()
                 .map(collectionService::findByName)
                 .flatMap(Optional::stream)
@@ -127,6 +128,46 @@ public class BookService {
         return bookRepo.findAll().stream()
                 .map(this::convertToDTO) // Convert each Book entity to BookDTO
                 .collect(Collectors.toList());
+    }
+
+    //GET books by collection
+    public List<BookDTO> getBooksByCollection(Long collectionId) {
+        List<Book> books = bookRepo.findByCollectionsId(collectionId);
+        return books.stream().map(book -> {
+            BookDTO dto = new BookDTO();
+            dto.setId(book.getId());
+            dto.setTitle(book.getTitle());
+            dto.setOriginalLanguage(book.getLingo());
+            dto.setFormat(book.getFormat());
+            dto.setInStock(book.isInStock());
+            List<String>collectionNames = book.getCollections().stream().map(Collection::getName).toList();
+            dto.setCollections(collectionNames);
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+    public List<BookDTO> getBooksByCollectionName(String collectionName) {
+        if (collectionName.length() < 3) {
+            throw new IllegalArgumentException("Collection name must be at least 3 characters long.");
+        }
+
+        List<Book> books = bookRepo.findByCollectionNameLike(collectionName);
+        return books.stream().map(book -> {
+            BookDTO dto = new BookDTO();
+            dto.setId(book.getId());
+            dto.setTitle(book.getTitle());
+            dto.setLingo(book.getLingo());
+            dto.setFormat(book.getFormat());
+            dto.setInStock(book.isInStock());
+
+            // Convert Collection entities to a list of their names
+            List<String> collectionNames = book.getCollections().stream()
+                    .map(Collection::getName)
+                    .collect(Collectors.toList());
+            dto.setCollections(collectionNames);
+
+            return dto;
+        }).collect(Collectors.toList());
     }
 
 
