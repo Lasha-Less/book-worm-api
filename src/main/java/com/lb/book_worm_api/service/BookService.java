@@ -8,11 +8,13 @@ import com.lb.book_worm_api.model.*;
 import com.lb.book_worm_api.model.Collection;
 import com.lb.book_worm_api.repository.BookPeopleRoleRepo;
 import com.lb.book_worm_api.repository.BookRepo;
+import com.lb.book_worm_api.repository.BookSpecification;
 import com.lb.book_worm_api.repository.PersonRepo;
 import com.lb.book_worm_api.util.LanguageUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.hibernate.Hibernate;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -170,6 +172,12 @@ public class BookService {
         }).collect(Collectors.toList());
     }
 
+    public List<BookDTO> searchBooks(Integer year, String language) {
+        Specification<Book> spec = BookSpecification.filterByCriteria(year, language);
+        return bookRepo.findAll(spec).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
 
     //GET single
     public BookDTO getBookById(Long id) {

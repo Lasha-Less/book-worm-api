@@ -37,15 +37,23 @@ public class BookController {
         return ResponseEntity.ok(books);
     }
 
-    @GetMapping("/books/by-collection/{collectionId}")
+    @GetMapping("/by-collection/{collectionId}")
     public ResponseEntity<List<BookDTO>> getBooksByCollection(@PathVariable Long collectionId) {
         List<BookDTO> books = bookService.getBooksByCollection(collectionId);
         return ResponseEntity.ok(books);
     }
 
-    @GetMapping("/books/by-collection-name/{collectionName}")
+    @GetMapping("/by-collection-name/{collectionName}")
     public ResponseEntity<List<BookDTO>> getBooksByCollectionName(@PathVariable String collectionName) {
         List<BookDTO> books = bookService.getBooksByCollectionName(collectionName);
+        return ResponseEntity.ok(books);
+    }
+
+    @GetMapping("/filter")
+    public ResponseEntity<List<BookDTO>> searchBooks(
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) String language) {
+        List<BookDTO> books = bookService.searchBooks(year, language);
         return ResponseEntity.ok(books);
     }
 
