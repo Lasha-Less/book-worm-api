@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  book_worm_api:
+    build: .
+    container_name: book_worm_api
+    restart: always
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://book-worm-mysql:3306/book_worm
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: password
+    ports:
+      - "8080:8080"
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    external: true
