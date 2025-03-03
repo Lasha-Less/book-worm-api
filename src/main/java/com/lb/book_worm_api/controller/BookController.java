@@ -83,11 +83,28 @@ public class BookController {
         }
     }
 
+    @DeleteMapping("/{bookId}/collections/{collectionName}")
+    public ResponseEntity<String> removeCollectionFromBook(
+            @PathVariable Long bookId,
+            @PathVariable String collectionName) {
+
+        bookService.removeCollectionFromBook(bookId, collectionName);
+        return ResponseEntity.ok("Collection '" + collectionName + "' removed from book with ID " + bookId);
+    }
+
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteBook(@PathVariable Long id){
         bookService.deleteBook(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{bookId}/people/{personId}")
+    public ResponseEntity<BookDTO> removePersonFromBook(
+            @PathVariable Long bookId,
+            @PathVariable Long personId) {
+        BookDTO updatedBook = bookService.removePersonFromBook(bookId, personId);
+        return ResponseEntity.ok(updatedBook);
     }
 
 }

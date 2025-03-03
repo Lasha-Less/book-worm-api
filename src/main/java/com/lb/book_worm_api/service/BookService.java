@@ -1,7 +1,6 @@
 package com.lb.book_worm_api.service;
 
 import com.lb.book_worm_api.dto.*;
-import com.lb.book_worm_api.exception.DuplicateResourceException;
 import com.lb.book_worm_api.exception.ResourceNotFoundException;
 import com.lb.book_worm_api.exception.ValidationException;
 import com.lb.book_worm_api.model.*;
@@ -10,10 +9,15 @@ import com.lb.book_worm_api.repository.BookPeopleRoleRepo;
 import com.lb.book_worm_api.repository.BookRepo;
 import com.lb.book_worm_api.repository.BookSpecification;
 import com.lb.book_worm_api.repository.PersonRepo;
+import com.lb.book_worm_api.util.BookConverter;
+import com.lb.book_worm_api.util.BookMapper;
 import com.lb.book_worm_api.util.LanguageUtils;
+import com.lb.book_worm_api.validation.BookValidator;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.hibernate.Hibernate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +28,8 @@ import java.util.stream.Collectors;
 @Service
 public class BookService {
 
+    private static final Logger logger = LoggerFactory.getLogger(BookService.class);
+
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -32,18 +38,32 @@ public class BookService {
     private final PersonService personService;
     private final BookPeopleRoleRepo bookPeopleRoleRepo;
     private final PersonRepo personRepo;
+    private final BookValidator bookValidator;
+    private final BookConverter bookConverter;
+    private final BookPeopleRoleService bookPeopleRoleService;
+    private final BookMapper bookMapper;
+
+
 
     public BookService(
             BookRepo bookRepo,
             CollectionService collectionService,
             PersonService personService,
             BookPeopleRoleRepo bookPeopleRoleRepo,
-            PersonRepo personRepo) {
+            PersonRepo personRepo,
+            BookValidator bookValidator,
+            BookConverter bookConverter,
+            BookPeopleRoleService bookPeopleRoleService,
+            BookMapper bookMapper) {
         this.bookRepo = bookRepo;
         this.collectionService = collectionService;
         this.personService = personService;
         this.bookPeopleRoleRepo = bookPeopleRoleRepo;
         this.personRepo = personRepo;
+        this.bookValidator = bookValidator;
+        this.bookConverter = bookConverter;
+        this.bookPeopleRoleService = bookPeopleRoleService;
+        this.bookMapper = bookMapper;
     }
 
     /**
@@ -51,75 +71,27 @@ public class BookService {
      */
     @Transactional
     public BookDTO createBook(BookInputDTO bookInputDTO) {
-        validateBookInput(bookInputDTO);
+        bookValidator.validateBookInput(bookInputDTO);
 
-        Book book = convertToBookEntity(bookInputDTO);
+        Book book = bookConverter.convertToBookEntity(bookInputDTO);
+        logger.debug("Saving book: {}", book);
         Book savedBook = bookRepo.save(book);
+        logger.debug("Saved book ID: {}", savedBook.getId());
 
-        assignPeopleToBook(savedBook, bookInputDTO);
+
+        bookPeopleRoleService.assignPeopleToBook(savedBook, bookInputDTO);
         bookRepo.flush();
 
         return fetchAndConvertToDTO(savedBook.getId());
     }
 
-    private void validateBookInput(BookInputDTO bookInputDTO) {
-        if (bookRepo.existsByTitle(bookInputDTO.getTitle())) {
-            throw new DuplicateResourceException(
-                    "A book with the title '" + bookInputDTO.getTitle() + "' already exists.");
-        }
 
-        if (bookInputDTO.getCollections() == null || bookInputDTO.getCollections().isEmpty()) {
-            throw new ValidationException("At least one collection must be specified.");
-        }
-
-        if (bookInputDTO.getInStock() == null) {
-            throw new ValidationException("Stock status must be specified.");
-        }
-
-        if ((bookInputDTO.getAuthors() == null || bookInputDTO.getAuthors().isEmpty()) &&
-                (bookInputDTO.getEditors() == null || bookInputDTO.getEditors().isEmpty())) {
-            throw new ValidationException("A book must have at least one author or editor.");
-        }
-    }
-
-    private Book convertToBookEntity(BookInputDTO bookInputDTO) {
-
-        Set<Collection> validatedCollections = bookInputDTO.getCollections().stream()
-                .map(collectionService::findByName)
-                .flatMap(Optional::stream)
-                .collect(Collectors.toSet());
-
-        if (validatedCollections.size() != bookInputDTO.getCollections().size()) {
-            throw new ValidationException("Some collections do not exist.");
-        }
-
-        Book book = new Book();
-        book.setTitle(bookInputDTO.getTitle());
-        book.setLingo(LanguageUtils.toIsoCode(bookInputDTO.getLanguage()));
-        book.setFormat(bookInputDTO.getFormat());
-        book.setLocation(bookInputDTO.getLocation());
-        book.setInStock(bookInputDTO.getInStock());
-        book.setOriginalLanguage(LanguageUtils.toIsoCode(bookInputDTO.getOriginalLanguage()));
-        book.setPublicationYear(bookInputDTO.getPublicationYear());
-        book.setHistoricalDate(bookInputDTO.getHistoricalDate());
-        book.setPublisher(bookInputDTO.getPublisher());
-        book.setCollections(validatedCollections);
-
-        return book;
-    }
-
-    private void assignPeopleToBook(Book book, BookInputDTO bookInputDTO) {
-        personService.assignPeopleToBook(book, bookInputDTO.getAuthors(), Role.AUTHOR);
-        personService.assignPeopleToBook(book, bookInputDTO.getEditors(), Role.EDITOR);
-        personService.assignPeopleToBook(book, bookInputDTO.getOthers(), Role.OTHER);
-    }
 
     private BookDTO fetchAndConvertToDTO(Long bookId) {
         Book book = bookRepo.findById(bookId)
                 .orElseThrow(() -> new ResourceNotFoundException("Book not found after saving"));
-
         entityManager.refresh(book);
-        return convertToDTO(book);
+        return bookMapper.convertToDTO(book);
     }
 
     /**
@@ -128,9 +100,10 @@ public class BookService {
     //GET all books
     public List<BookDTO> getAllBooks() {
         return bookRepo.findAll().stream()
-                .map(this::convertToDTO) // Convert each Book entity to BookDTO
+                .map(bookMapper::convertToDTO) // Convert each Book entity to BookDTO
                 .collect(Collectors.toList());
     }
+
 
     //GET books by collection
     public List<BookDTO> getBooksByCollection(Long collectionId) {
@@ -147,6 +120,8 @@ public class BookService {
             return dto;
         }).collect(Collectors.toList());
     }
+
+
 
     public List<BookDTO> getBooksByCollectionName(String collectionName) {
         if (collectionName.length() < 3) {
@@ -172,12 +147,15 @@ public class BookService {
         }).collect(Collectors.toList());
     }
 
+
+
     public List<BookDTO> searchBooks(Integer year, String language) {
         Specification<Book> spec = BookSpecification.filterByCriteria(year, language);
         return bookRepo.findAll(spec).stream()
-                .map(this::convertToDTO)
+                .map(bookMapper::convertToDTO)
                 .collect(Collectors.toList());
     }
+
 
     //GET single
     public BookDTO getBookById(Long id) {
@@ -185,17 +163,18 @@ public class BookService {
                 .orElseThrow(() -> new ResourceNotFoundException("Book not found with ID: " + id));
         Hibernate.initialize(book.getCollections());
         //start DEBUG
-        System.out.println("Book retrieved: " + book.getTitle());
-        System.out.println("Collections retrieved from DB after explicit loading: " + book.getCollections().size());
+        logger.debug("Book retrieved: {}", book.getTitle());
+        logger.debug("Collections retrieved from DB after explicit loading: {}", book.getCollections().size());
         //end DEBUG
-        return convertToDTO(book);
+        return bookMapper.convertToDTO(book);
     }
+
 
 
     public List<BookDTO> getBooksByTitle(String title) {
         List<Book> books = bookRepo.findByTitleContainingIgnoreCase(title);
         return books.stream()
-                .map(this::convertToDTO)
+                .map(bookMapper::convertToDTO)
                 .collect(Collectors.toList());
     }
 
@@ -210,9 +189,8 @@ public class BookService {
         // Update book attributes
         updateBookAttributes(book, updateDTO);
 
-        // Force saving the book first to ensure it is managed by JPA
-        book = bookRepo.save(book);
-        bookRepo.flush(); // Persist book before modifying collections
+        // Save book to ensure it's managed by JPA
+        bookRepo.save(book); // Removed flush here
 
         // Update collections
         updateBookCollections(book, updateDTO);
@@ -220,16 +198,14 @@ public class BookService {
         // Update people (authors, editors, others)
         updateBookPeople(book, updateDTO);
 
-        // Persist final changes
-        book = bookRepo.save(book);
+        // Persist final changes before fetching fresh data
         bookRepo.flush();
-        entityManager.refresh(book); // Ensure all updates are applied
 
-        // Debugging
-        System.out.println("Final collections in book after persistence: " + book.getCollections().size());
-
-        return convertToDTO(book);
+        // Fetch fresh book data and convert to DTO
+        return fetchAndConvertToDTO(bookId);
     }
+
+
 
     private void updateBookAttributes(Book book, BookUpdateDTO updateDTO) {
         if (updateDTO.getTitle() != null) book.setTitle(updateDTO.getTitle());
@@ -244,39 +220,100 @@ public class BookService {
         if (updateDTO.getPublisher() != null) book.setPublisher(updateDTO.getPublisher());
     }
 
+
+
     private void updateBookCollections(Book book, BookUpdateDTO updateDTO) {
-        if (updateDTO.getCollections() == null) return;
-
-        System.out.println("Existing collections before update: " + book.getCollections().size());
-
-        List<Collection> collections = collectionService.findAllByName(updateDTO.getCollections());
-
-        System.out.println("Collections found: " + collections.size());
-
-        if (collections.size() != updateDTO.getCollections().size()) {
+        if (updateDTO.getCollections() == null) {
+            logger.info("No new collections provided, skipping update.");
+            return;
+        }
+        // Retrieve existing collections
+        Set<Collection> existingCollections = new HashSet<>(book.getCollections());
+        // Find new collections from database
+        List<Collection> collectionsToAdd = collectionService.findAllByName(updateDTO.getCollections());
+        // Ensure all collections exist
+        if (collectionsToAdd.size() != updateDTO.getCollections().size()) {
             throw new ValidationException("One or more collections do not exist.");
         }
-
-        book.getCollections().clear(); // Prevent replacing, ensure fresh update
-        bookRepo.flush(); // Persist cleared state
-
-        book.getCollections().addAll(collections);
-
-        System.out.println("Collections assigned to book: " + book.getCollections().size());
+        // Merge existing collections with new ones
+        existingCollections.addAll(collectionsToAdd);
+        // ✅ Instead of clearing, explicitly update the reference with merged collections
+        book.setCollections(existingCollections);
+        bookRepo.save(book); // ✅ Ensure the book is saved with updated collections
+        bookRepo.flush(); // ✅ Persist changes
+        logger.info("DEBUG MESSAGE. Final collections assigned to book: {}", book.getCollections().size());
     }
+
+
+
+    public void removeCollectionFromBook(Long bookId, String collectionName) {
+        // Retrieve the book by ID or throw an exception if not found
+        Book book = bookRepo.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with ID: " + bookId));
+        // Retrieve the collection by name or throw an exception if not found
+        Collection collection = collectionService.findByName(collectionName)
+                .orElseThrow(() -> new ResourceNotFoundException("Collection not found with name: " + collectionName));
+        // A) Check if the collection is linked to the book
+        if (!book.getCollections().contains(collection)) {
+            throw new ValidationException("Book is not linked to the collection: " + collectionName);
+        }
+        // B) Remove the collection from the book's collection set
+        book.getCollections().remove(collection);
+        logger.info("Collection removed from book: {}", collectionName);
+        // C) If no collection is left, assign "Unsorted"
+        if (book.getCollections().isEmpty()) {
+            Collection unsortedCollection = collectionService.findByName("Unsorted")
+                    .orElseThrow(() -> new ResourceNotFoundException("Unsorted collection not found!"));
+            book.getCollections().add(unsortedCollection);
+            logger.info("No collections left. Assigned 'Unsorted' collection to book.");
+        }
+        // D) Save and persist changes
+        bookRepo.save(book);
+        bookRepo.flush();
+    }
+
+
 
     private void updateBookPeople(Book book, BookUpdateDTO updateDTO) {
-        if (updateDTO.getAuthors() != null) {
-            personService.assignPeopleToBook(book, updateDTO.getAuthors(), Role.AUTHOR);
-        }
-        if (updateDTO.getEditors() != null) {
-            personService.assignPeopleToBook(book, updateDTO.getEditors(), Role.EDITOR);
-        }
-        if (updateDTO.getOthers() != null) {
-            personService.assignPeopleToBook(book, updateDTO.getOthers(), Role.OTHER);
-        }
+        bookPeopleRoleService.updateBookPeople(book, updateDTO);
     }
 
+
+
+    @Transactional
+    public BookDTO removePersonFromBook(Long bookId, Long personId) {
+        Book book = bookRepo.findByIdWithCollections(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + bookId));
+        // Find all roles linked to this book for the given person
+        List<BookPeopleRole> bookRoles = book.getBookPeopleRoles().stream()
+                .filter(role -> role.getPerson().getId().equals(personId))
+                .collect(Collectors.toList());
+        if (bookRoles.isEmpty()) {
+            throw new ResourceNotFoundException("Person with id " + personId + " is not related to this book.");
+        }
+        // Count remaining authors and editors
+        long remainingAuthors = book.getBookPeopleRoles().stream()
+                .filter(role -> role.getRole() == Role.AUTHOR)
+                .count();
+        long remainingEditors = book.getBookPeopleRoles().stream()
+                .filter(role -> role.getRole() == Role.EDITOR)
+                .count();
+        for (BookPeopleRole bookRole : bookRoles) {
+            // If removing an AUTHOR or EDITOR, ensure at least one remains
+            if ((bookRole.getRole() == Role.AUTHOR && remainingAuthors <= 1) ||
+                    (bookRole.getRole() == Role.EDITOR && remainingEditors <= 1)) {
+                throw new ValidationException("Cannot remove the last author or editor from the book.");
+            }
+            // ✅ Remove the role directly here to avoid circular dependency
+            book.getBookPeopleRoles().remove(bookRole);
+            bookPeopleRoleRepo.delete(bookRole); // Hard delete
+        }
+        // ✅ Call method in PersonService to remove orphaned person
+        personService.removeOrphanedPerson(personId);
+        // Persist changes before fetching updated data
+        bookRepo.flush();
+        return fetchAndConvertToDTO(bookId); // Return updated book details
+    }
 
 
     /**
@@ -300,50 +337,5 @@ public class BookService {
 
         personRepo.deleteAll(orphanedPeople);
     }
-
-
-
-    public BookDTO convertToDTO(Book book) {
-        BookDTO bookDTO = new BookDTO();
-
-        bookDTO.setId(book.getId());
-        bookDTO.setTitle(book.getTitle());
-        bookDTO.setLingo(book.getLingo());
-        bookDTO.setFormat(book.getFormat());
-        bookDTO.setLocation(book.getLocation());
-        bookDTO.setInStock(book.isInStock());
-        bookDTO.setOriginalLanguage(book.getOriginalLanguage());
-        bookDTO.setPublicationYear(book.getPublicationYear());
-        bookDTO.setHistoricalDate(book.getHistoricalDate());
-        bookDTO.setPublisher(book.getPublisher());
-
-        bookDTO.setAuthors(getPeopleByRole(book, Role.AUTHOR));
-        bookDTO.setEditors(getPeopleByRole(book, Role.EDITOR));
-        bookDTO.setOthers(getPeopleByRole(book, Role.OTHER));
-
-        // Convert collections
-        bookDTO.setCollections(
-                new ArrayList<>(book.getCollections()).stream() // Force loading collections
-                        .map(Collection::getName)
-                        .collect(Collectors.toList())
-        );
-
-        return bookDTO;
-    }
-
-    private List<PersonRoleDTO> getPeopleByRole(Book book, Role role) {
-        //start DEBUGGING CODE (Remove when no longer needed)
-        System.out.println("Book ID: " + book.getId() + " Role: " + role +
-                " People Roles Found: " + book.getBookPeopleRoles().size());
-        //end DEBUGGING CODE
-
-        return book.getBookPeopleRoles().stream()
-                .filter(bp -> bp.getRole().equals(role)) // Filter by role
-                .map(bp -> new PersonRoleDTO(bp.getPerson()
-                        .getFirstName(), bp.getPerson().getLastName(), role.name()))
-                .collect(Collectors.toList());
-    }
-
-
 
 }

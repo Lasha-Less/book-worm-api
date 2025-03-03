@@ -27,4 +27,6 @@ public interface BookPeopleRoleRepo extends JpaRepository<BookPeopleRole, Long> 
     @Query("DELETE FROM BookPeopleRole bpr WHERE bpr.book.id = :bookId")
     void deleteRolesByBookId(@Param("bookId") Long bookId);
 
+    boolean existsByPersonId(Long personId);
+
 }

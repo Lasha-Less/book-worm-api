@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -23,6 +24,6 @@ public class BookUpdateDTO {
     private Integer publicationYear;
     private Integer historicalDate;
     private String publisher;
-    private List<PersonRoleInputDTO> others;
+    private List<PersonRoleInputDTO> others = new ArrayList<>();
 
 }

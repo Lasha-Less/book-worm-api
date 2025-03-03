@@ -2,6 +2,7 @@ package com.lb.book_worm_api.controller;
 
 import com.lb.book_worm_api.dto.PersonDTO;
 import com.lb.book_worm_api.dto.PersonUpdateDTO;
+import com.lb.book_worm_api.dto.PersonWithRolesDTO;
 import com.lb.book_worm_api.model.Person;
 import com.lb.book_worm_api.model.Role;
 import com.lb.book_worm_api.service.PersonService;
@@ -23,8 +24,8 @@ public class PersonController {
     }
 
     @GetMapping
-    public ResponseEntity<List<PersonDTO>> getAllPeople() {
-        List<PersonDTO> people = personService.getAllPersons();
+    public ResponseEntity<List<PersonWithRolesDTO>> getAllPeople() {
+        List<PersonWithRolesDTO> people = personService.getAllPersons();
         if (people.isEmpty()) {
             return ResponseEntity.noContent().build();
         }

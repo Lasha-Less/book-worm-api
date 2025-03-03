@@ -18,8 +18,7 @@ public class Person {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "first_name", nullable = false, length = 100)
-    @NotBlank(message = "First name cannot be empty")
+    @Column(name = "first_name", length = 100)
     private String firstName;
 
     @Column(name = "prefix", length = 10)
@@ -34,6 +33,10 @@ public class Person {
     private Set<BookPeopleRole> bookPeopleRoles = new HashSet<>();
 
     public Person() {
+    }
+
+    public Person(String lastName) {
+        this.lastName = lastName;
     }
 
     public Person(String firstName, String lastName) {
