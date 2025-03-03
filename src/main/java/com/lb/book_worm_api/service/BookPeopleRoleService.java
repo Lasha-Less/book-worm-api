@@ -6,11 +6,12 @@ import com.lb.book_worm_api.dto.PersonDTO;
 import com.lb.book_worm_api.dto.PersonRoleInputDTO;
 import com.lb.book_worm_api.exception.ResourceNotFoundException;
 import com.lb.book_worm_api.model.Book;
-import com.lb.book_worm_api.model.BookPeopleRole;
 import com.lb.book_worm_api.model.Person;
 import com.lb.book_worm_api.model.Role;
 import com.lb.book_worm_api.repository.BookPeopleRoleRepo;
 import com.lb.book_worm_api.repository.PersonRepo;
+import com.lb.book_worm_api.util.BookPeopleRoleMapper;
+import com.lb.book_worm_api.validation.BookPeopleRoleValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,13 +23,19 @@ public class BookPeopleRoleService {
     private final PersonService personService;
     private final BookPeopleRoleRepo bookPeopleRoleRepo;
     private final PersonRepo personRepo;
+    private final BookPeopleRoleMapper bookPeopleRoleMapper;
+    private final BookPeopleRoleValidator bookPeopleRoleValidator;
 
     public BookPeopleRoleService(PersonService personService,
                                  BookPeopleRoleRepo bookPeopleRoleRepo,
-                                 PersonRepo personRepo) {
+                                 PersonRepo personRepo,
+                                 BookPeopleRoleMapper bookPeopleRoleMapper,
+                                 BookPeopleRoleValidator bookPeopleRoleValidator) {
         this.personService = personService;
         this.bookPeopleRoleRepo = bookPeopleRoleRepo;
         this.personRepo = personRepo;
+        this.bookPeopleRoleMapper = bookPeopleRoleMapper;
+        this.bookPeopleRoleValidator = bookPeopleRoleValidator;
     }
 
     public void assignPeopleToBook(Book book, BookInputDTO bookInputDTO) {
@@ -52,38 +59,28 @@ public class BookPeopleRoleService {
     private void assignOthersWithRoles(Book book, List<PersonRoleInputDTO> others) {
         if (others != null) {
             for (PersonRoleInputDTO personRole : others) {
-                Role role;
-                try {
-                    role = (personRole.getRole() != null) ?
-                            Role.valueOf(personRole.getRole().toUpperCase()) : Role.OTHER;
-                } catch (IllegalArgumentException e) {
-                    role = Role.OTHER; // Default to OTHER if the role string is invalid
-                }
+                Role role = bookPeopleRoleValidator.validateAndConvertRole(personRole.getRole());
                 assignPeopleToBook(book, List.of(personRole), role);
             }
         }
     }
 
-    //Test implementation REMOVE if it does not work
     @Transactional
     public void assignRole(Book book, Person person, Role role) {
-        bookPeopleRoleRepo.findByBookAndPersonAndRole(
-                book, person, role).orElseGet(()-> bookPeopleRoleRepo.save(new BookPeopleRole(book, person, role)));
+        bookPeopleRoleValidator.validateRoleAssignment(book, person, role);
+        bookPeopleRoleRepo.findByBookAndPersonAndRole(book, person, role)
+                .orElseGet(() -> bookPeopleRoleRepo.save(
+                        bookPeopleRoleMapper.toBookPeopleRoleEntity(book, person, role)));
     }
 
-    //Test implementation REMOVE if it does not work
     @Transactional
     public void assignPeopleToBook(Book book, List<PersonRoleInputDTO> peopleWithRoles, Role role) {
         List<PersonDTO> peopleDTOs = personService.assignPeopleToBook(book, peopleWithRoles);
 
         for (PersonDTO personDTO : peopleDTOs) {
-            // Retrieve the actual Person entity from the database before assigning a role
             Person person = personRepo.findById(personDTO.getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Person not found with ID: " + personDTO.getId()));
-
             assignRole(book, person, role);
         }
     }
-
-
 }

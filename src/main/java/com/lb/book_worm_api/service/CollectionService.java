@@ -1,9 +1,10 @@
 package com.lb.book_worm_api.service;
 
-import com.lb.book_worm_api.exception.ResourceNotFoundException;
 import com.lb.book_worm_api.model.Collection;
 import com.lb.book_worm_api.repository.CollectionRepo;
+import com.lb.book_worm_api.validation.CollectionValidator;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -11,9 +12,11 @@ import java.util.Optional;
 public class CollectionService {
 
     private final CollectionRepo collectionRepo;
+    private final CollectionValidator collectionValidator;
 
-    public CollectionService(CollectionRepo collectionRepo) {
+    public CollectionService(CollectionRepo collectionRepo, CollectionValidator collectionValidator) {
         this.collectionRepo = collectionRepo;
+        this.collectionValidator = collectionValidator;
     }
 
     //GET all
@@ -41,6 +44,7 @@ public class CollectionService {
 
     //CREATE single
     public Collection createCollection(Collection collection){
+        collectionValidator.validateUniqueCollectionName(collection.getName());
         return collectionRepo.save(collection);
     }
 
@@ -56,11 +60,7 @@ public class CollectionService {
 
     //DELETE single
     public void deleteCollection(Long id) {
-        if (!collectionRepo.existsById(id)) {
-            throw new ResourceNotFoundException("Collection not found with ID: " + id);
-        }
+        collectionValidator.validateCollectionExists(id);
         collectionRepo.deleteById(id);
     }
-
-
 }

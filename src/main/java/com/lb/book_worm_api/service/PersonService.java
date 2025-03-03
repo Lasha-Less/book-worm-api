@@ -4,7 +4,6 @@ import com.lb.book_worm_api.dto.*;
 import com.lb.book_worm_api.exception.ResourceNotFoundException;
 import com.lb.book_worm_api.exception.ValidationException;
 import com.lb.book_worm_api.model.Book;
-import com.lb.book_worm_api.model.BookPeopleRole;
 import com.lb.book_worm_api.model.Person;
 import com.lb.book_worm_api.model.Role;
 import com.lb.book_worm_api.repository.BookPeopleRoleRepo;
