@@ -75,12 +75,8 @@ public class BookController {
 
     @PutMapping("/{id}")
     public ResponseEntity<BookDTO> updateBook(@PathVariable Long id, @Valid @RequestBody BookUpdateDTO updateBookDTO) {
-        try {
-            BookDTO updatedBook = bookService.updateBook(id, updateBookDTO);
-            return ResponseEntity.ok(updatedBook);
-        } catch (ResourceNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
+        BookDTO updatedBook = bookService.updateBook(id, updateBookDTO);
+        return ResponseEntity.ok(updatedBook);
     }
 
     @DeleteMapping("/{bookId}/collections/{collectionName}")

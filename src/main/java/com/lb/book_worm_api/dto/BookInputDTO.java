@@ -17,17 +17,17 @@ public class BookInputDTO {
     @NotBlank(message = "Title is required")
     private String title;
 
-    @NotNull(message = "At least one author or editor is required")
+//    @NotNull(message = "At least one author or editor is required")
     private List<PersonRoleInputDTO> authors;
 
-    @NotNull(message = "At least one author or editor is required")
+//    @NotNull(message = "At least one author or editor is required")
     private List<PersonRoleInputDTO> editors;
 
     @NotBlank(message = "Language is required")
-    private final String language; // if user enters 'english', backend will translate to 'en'
+    private String language; // if user enters 'english', backend will translate to 'en'
 
     @NotBlank(message = "Format is required")
-    private final String format;
+    private String format;
 
     @NotBlank(message = "Location is required")
     private String location;
@@ -53,6 +53,9 @@ public class BookInputDTO {
     private String publisher;
 
     private List<PersonRoleInputDTO> others = new ArrayList<>(); // Optional field, initialized as an empty list
+
+    public BookInputDTO() {
+    }
 
     public BookInputDTO(
             String title,
