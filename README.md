@@ -8,13 +8,13 @@ This is a **Spring Boot API** for managing database records with full CRUD opera
 - **Framework:** Spring Boot  
 - **Database:** SQL (JPA, Hibernate)  
 - **Containerization:** Docker  
-- **Security:** Spring Security (if applicable)  
+- **Security:** Spring Security 
 
 ## 📦 Features  
 ✅ CRUD operations (Create, Read, Update, Delete)  
 ✅ RESTful API endpoints  
 ✅ Docker containerization for deployment  
-✅ Authentication & Authorization (if applicable)  
+✅ Authentication & Authorization (currently in progress)  
 ✅ Unit testing (currently in progress)  
 
 ## 🔧 Installation & Running  
