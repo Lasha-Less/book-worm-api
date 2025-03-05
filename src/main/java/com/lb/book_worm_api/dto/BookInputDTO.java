@@ -83,4 +83,22 @@ public class BookInputDTO {
         }
     }
 
+    @Override
+    public String toString() {
+        return "BookInputDTO{" +
+                "title='" + title + '\'' +
+                ", authors=" + authors +
+                ", editors=" + editors +
+                ", language='" + language + '\'' +
+                ", format='" + format + '\'' +
+                ", location='" + location + '\'' +
+                ", inStock=" + inStock +
+                ", collections=" + collections +
+                ", originalLanguage='" + originalLanguage + '\'' +
+                ", publicationYear=" + publicationYear +
+                ", historicalDate=" + historicalDate +
+                ", publisher='" + publisher + '\'' +
+                ", others=" + others +
+                '}';
+    }
 }

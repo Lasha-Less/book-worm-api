@@ -71,15 +71,34 @@ public class BookService {
      */
     @Transactional
     public BookDTO createBook(BookInputDTO bookInputDTO) {
+        System.out.println("Service bookConverter instance: " + System.identityHashCode(this.bookConverter));
+        //DEBUG LINE
+        System.out.println("Inside createBook() method");
         bookValidator.validateBookInput(bookInputDTO);
-
+        //DEBUG LINE
+        System.out.println("validateBookInput was called");
+        System.out.println("bookConverter input DTO: " + bookInputDTO);
         Book book = bookConverter.convertToBookEntity(bookInputDTO);
+        //DEBUG LINE
+        System.out.println("convertToBookEntity was called");
+        System.out.println("convertToBookEntity returned this: " + book);
         logger.debug("Saving book: {}", book);
+        System.out.println("Book before saving: " + book);
         Book savedBook = bookRepo.save(book);
+        //DEBUG LINE
+        System.out.println("bookRepo.save() was called");
+        System.out.println("Saved Book returned by bookRepo.save(): " + savedBook);
+        if (savedBook == null) {
+            throw new RuntimeException("Mocked bookRepo.save() returned null!");
+        }
+        System.out.println("Saved Book returned by bookRepo.save(): " + savedBook + savedBook.getId());
         logger.debug("Saved book ID: {}", savedBook.getId());
+        logger.debug("Book object before saving: {}", book);
 
 
         bookPeopleRoleService.assignPeopleToBook(savedBook, bookInputDTO);
+        //DEBUG LINE
+        System.out.println("assignPeopleToBook() was called");
         bookRepo.flush();
 
         return fetchAndConvertToDTO(savedBook.getId());

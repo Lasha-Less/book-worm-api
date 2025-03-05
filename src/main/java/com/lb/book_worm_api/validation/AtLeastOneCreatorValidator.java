@@ -14,8 +14,10 @@ public class AtLeastOneCreatorValidator implements ConstraintValidator<AtLeastOn
     @Override
     public boolean isValid(BookInputDTO dto, ConstraintValidatorContext context) {
 
-        @NotNull(message = "At least one author or editor is required") List<PersonRoleInputDTO> authors = dto.getAuthors();
-        @NotNull(message = "At least one author or editor is required") List<PersonRoleInputDTO> editors = dto.getEditors();
+        @NotNull(message =
+                "At least one author or editor is required") List<PersonRoleInputDTO> authors = dto.getAuthors();
+        @NotNull(message =
+                "At least one author or editor is required") List<PersonRoleInputDTO> editors = dto.getEditors();
 
         return (authors != null && !authors.isEmpty()) || (editors != null && !editors.isEmpty());
     }
