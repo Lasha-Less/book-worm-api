@@ -1,36 +1,64 @@
-# 📚 Spring Boot Database API  
+# 📚 book-worm-api
 
 ## 🚀 Overview  
-This is a **Spring Boot API** for managing database records with full CRUD operations. It includes authentication, authorization, structured data handling, and **Docker containerization**.  
+**book-worm-api** is a Spring Boot microservice that manages structured book metadata using a MySQL relational database. 
+It provides full CRUD operations over books, people (authors, editors, translators), and collections, and serves as the 
+core SQL-based metadata store for a larger **Book Metadata Management System**.
 
-## 🛠 Tech Stack  
-- **Language:** Java  
+---
+
+## 🧱 Tech Stack  
+- **Language:** Java 17  
 - **Framework:** Spring Boot  
-- **Database:** SQL (JPA, Hibernate)  
+- **Persistence:** Spring Data JPA + Hibernate  
+- **Database:** MySQL  
 - **Containerization:** Docker  
-- **Security:** Spring Security 
+- **Security:** Spring Security (WIP)  
+- **Testing:** JUnit (WIP)  
+
+---
 
 ## 📦 Features  
-✅ CRUD operations (Create, Read, Update, Delete)  
-✅ RESTful API endpoints  
-✅ Docker containerization for deployment  
-✅ Authentication & Authorization (currently in progress)  
-✅ Unit testing (currently in progress)  
+✅ Full CRUD operations for:
+- Books  
+- Authors, Editors, Translators  
+- Collections  
 
-## 🔧 Installation & Running  
-To run the project locally:  
+✅ RESTful API endpoints  
+✅ Dockerized setup for easy deployment  
+✅ Authentication & Authorization *(in progress)*  
+✅ Unit testing *(in progress)*  
+
+---
+
+## 🧩 Part of: Book Metadata Management System
+
+This service is part of a modular microservices architecture, consisting of:
+
+| Service          | Responsibility                                   |
+|------------------|---------------------------------------------------|
+| `book-worm-api`  | Manages finalized, enriched book metadata in SQL |
+| `book-bridge-api`| Imports book metadata from Google Books into MongoDB |
+| `book-scribe`    | Enriches, transforms, and imports Mongo data into SQL |
+| `control-panel` *(planned)* | Orchestrates and monitors the entire system via UI & API |
+
+---
+
+## 🔧 Getting Started
+
+To run the project locally:
+
 ```bash
 # Clone the repository
 git clone https://github.com/Lasha-Less/book-worm-api.git
-
-# Navigate into the project folder
 cd book-worm-api
 
-# Build and run the application
+# Run with Maven
 mvn spring-boot:run
+
 
 # Build Docker image
 docker build -t book-worm-api .
 
-# Run Docker container
+# Run container
 docker run -p 8080:8080 book-worm-api
